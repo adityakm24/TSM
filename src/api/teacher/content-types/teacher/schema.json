@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "teachers",
+  "info": {
+    "singularName": "teacher",
+    "pluralName": "teachers",
+    "displayName": "teacher",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "t_id": {
+      "type": "uid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "dept": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string"
+    }
+  }
+}
