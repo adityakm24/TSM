@@ -344,6 +344,7 @@ if (is_user_logged_in()) {
             </div>
         </div>
 
+
         <!-- Edit School Data Popup -->
         <div class="popup-overlay" id="editPopupOverlay">
             <div class="popup-container">
@@ -351,29 +352,28 @@ if (is_user_logged_in()) {
                 <form method="post" action="">
                     <input type="hidden" id="edit_id" name="update_id" value="">
                     <label for="edit_school_name">Name:</label>
-                    <input type="text" name="edit_school_name" id="edit_school_name" required autocomplete="off">
+                    <input type="text" name="edit_school_name" id="edit_school_name" required autocomplete="on" oninput="this.placeholder = this.value">
 
                     <label for="edit_subdomain">Subdomain:</label>
-                    <input type="text" name="edit_subdomain" id="edit_subdomain" required autocomplete="off">
+                    <input type="text" name="edit_subdomain" id="edit_subdomain" required autocomplete="on" oninput="this.placeholder = this.value">
 
                     <label for="edit_principal">Principal:</label>
-                    <input type="text" name="edit_principal" id="edit_principal" required autocomplete="off">
+                    <input type="text" name="edit_principal" id="edit_principal" required autocomplete="on" oninput="this.placeholder = this.value">
 
                     <label for="edit_ph_no">Phone Number:</label>
-                    <input type="tel" name="edit_ph_no" id="edit_ph_no" required autocomplete="off">
+                    <input type="tel" name="edit_ph_no" id="edit_ph_no" required autocomplete="on" oninput="this.placeholder = this.value">
 
                     <label for="edit_mail_id">Email:</label>
-                    <input type="email" name="edit_mail_id" id="edit_mail_id" required autocomplete="off">
+                    <input type="email" name="edit_mail_id" id="edit_mail_id" required autocomplete="on" oninput="this.placeholder = this.value">
 
                     <label for="edit_address">Address:</label>
-                    <textarea name="edit_address" id="edit_address" required autocomplete="off"></textarea>
+                    <textarea name="edit_address" id="edit_address" required autocomplete="on" oninput="this.placeholder = this.value"></textarea>
 
                     <input type="submit" name="update" value="Update">
                     <button type="button" onclick="hideEditPopup()">Cancel</button>
                 </form>
             </div>
         </div>
-
         <!-- Display Table -->
 		<?php if (!empty($query_results)) : ?>
             <table>
@@ -398,7 +398,7 @@ if (is_user_logged_in()) {
                         <td><?php echo esc_html($school_data->mail_id); ?></td>
                         <td><?php echo esc_html($school_data->address); ?></td>
                         <td>
-                            <button onclick="editPopup(<?php echo $school_data->id; ?>)">Edit</button>
+                            <button onclick="editPopup(<?php echo $school_data->id; ?>, <?php $query_results ?>)">Edit</button>
                             <form method="post" action="">
                                 <input type="hidden" name="delete_id" value="<?php echo $school_data->id; ?>">
 								<?php wp_nonce_field('delete_nonce', 'delete_nonce'); ?>
@@ -429,25 +429,31 @@ if (is_user_logged_in()) {
             document.getElementById("popupOverlay").style.display = "none";
         }
 
+        query_results = <?php echo json_encode($query_results); ?>;
+
+
         function editPopup(id) {
             document.getElementById("editPopupOverlay").style.display = "block";
-
             // Populate the edit form fields with data from the selected row
-            const schoolData = <?php echo json_encode($query_results); ?>;
-            const selectedSchool = schoolData.find((school) => school.id === id);
-            document.getElementById("edit_id").value = selectedSchool.id;
-            document.getElementById("edit_school_name").value = selectedSchool.school_name;
-            document.getElementById("edit_subdomain").value = selectedSchool.subdomain;
-            document.getElementById("edit_principal").value = selectedSchool.principal;
-            document.getElementById("edit_ph_no").value = selectedSchool.ph_no;
-            document.getElementById("edit_mail_id").value = selectedSchool.mail_id;
-            document.getElementById("edit_address").value = selectedSchool.address;
+            const selectedSchool = query_results.find((school) => parseInt(school.id) === id);
+            if (selectedSchool) {
+                document.getElementById("edit_school_name").value = selectedSchool.school_name;
+                document.getElementById("edit_subdomain").value = selectedSchool.subdomain;
+                document.getElementById("edit_principal").value = selectedSchool.principal;
+                document.getElementById("edit_ph_no").value = selectedSchool.ph_no;
+                document.getElementById("edit_mail_id").value = selectedSchool.mail_id;
+                document.getElementById("edit_address").value = selectedSchool.address;
+            } else {
+                console.error("Selected school data not found!");
+            }
         }
+
 
         function hideEditPopup() {
             document.getElementById("editPopupOverlay").style.display = "none";
         }
     </script>
+
 	<?php
 } else {
 	// Redirect to the login page if the user is not logged in
