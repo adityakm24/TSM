@@ -70,24 +70,16 @@ if (is_user_logged_in() && current_user_can('teacher')) {
     echo '</form>';
 
     // Handle report upload here
-    if (isset($_POST['upload_report'])) {
-        // Handle the file upload and database insertion
-        // Make sure to validate the uploaded file and sanitize data
-        // Example: $student_id = sanitize_text_field($_POST['student_id']);
-        // Example: $file = $_FILES['report'];
+    if (isset($_POST['upload_report'])) { 
+        
 
-        // Insert the report data into your custom database table
-        // Example: $wpdb->insert($custom_table_name, $data);
+     
 
-        // Display a success message or handle errors
-        // Example: echo '<div class="success-message">Report uploaded successfully.</div>';
-    }
+    echo '</div>'; 
 
-    echo '</div>'; // Close the container
-
-    get_footer(); // Include the footer if needed
+    get_footer(); 
 } else {
-    // Redirect unauthorized users to the teacher login page or display an error message
-    wp_redirect(home_url('/teacher-login/')); // Redirect to the teacher login page
+   
+    wp_redirect(home_url('/teacher-login/')); 
     exit;
 }
