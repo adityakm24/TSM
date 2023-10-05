@@ -7,189 +7,190 @@ $table_name = 'tsm_school';
 
 // Check if the user is logged in
 if (is_user_logged_in()) {
-	// Get the current user object
-	$current_user = wp_get_current_user();
-	$table_name = 'tsm_school';
+    // Get the current user object
+    $current_user = wp_get_current_user();
+    $table_name = 'tsm_school';
 
-	// Initialize form field variables
-	$school_name = '';
-	$subdomain = '';
-	$principal = '';
-	$ph_no = '';
-	$mail_id = '';
-	$address = '';
+    // Initialize form field variables
+    $school_name = '';
+    $subdomain = '';
+    $principal = '';
+    $ph_no = '';
+    $mail_id = '';
+    $address = '';
 
-	if (isset($_POST['super_admin_logout'])) {
-		// Verify the logout nonce
-		if (wp_verify_nonce($_POST['super_admin_logout_nonce'], 'super_admin_logout')) {
-			// Perform the logout
-			wp_logout();
+    if (isset($_POST['super_admin_logout'])) {
+        // Verify the logout nonce
+        if (wp_verify_nonce($_POST['super_admin_logout_nonce'], 'super_admin_logout')) {
+            // Perform the logout
+            wp_logout();
 
-			// Destroy the session
-			session_destroy();
+            // Destroy the session
+            session_destroy();
 
-			// Redirect to the login page
-			wp_redirect(home_url('/super-admin-login/'));
-			exit;
-		}
-	}
+            // Redirect to the login page
+            wp_redirect(home_url('/super-admin-login/'));
+            exit;
+        }
+    }
 
-	// Custom password strength check function
-	function is_strong_password($password, $min_length = 8) {
-		// Check if the password meets the minimum length requirement
-		if (strlen($password) < $min_length) {
-			return false;
-		}
+    // Custom password strength check function
+    function is_strong_password($password, $min_length = 8)
+    {
+        // Check if the password meets the minimum length requirement
+        if (strlen($password) < $min_length) {
+            return false;
+        }
 
-		// Additional password strength checks
-		// You can customize these checks based on your requirements
+        // Additional password strength checks
+        // You can customize these checks based on your requirements
 
-		// Check for at least one lowercase letter
-		if (!preg_match('/[a-z]/', $password)) {
-			return false;
-		}
+        // Check for at least one lowercase letter
+        if (!preg_match('/[a-z]/', $password)) {
+            return false;
+        }
 
-		// Check for at least one uppercase letter
-		if (!preg_match('/[A-Z]/', $password)) {
-			return false;
-		}
+        // Check for at least one uppercase letter
+        if (!preg_match('/[A-Z]/', $password)) {
+            return false;
+        }
 
-		// Check for at least one digit
-		if (!preg_match('/\d/', $password)) {
-			return false;
-		}
+        // Check for at least one digit
+        if (!preg_match('/\d/', $password)) {
+            return false;
+        }
 
-		// Check for at least one special character
-		if (!preg_match('/[^a-zA-Z\d]/', $password)) {
-			return false;
-		}
+        // Check for at least one special character
+        if (!preg_match('/[^a-zA-Z\d]/', $password)) {
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	// Check if the form is submitted for adding a new school
-	if (isset($_POST['upload'])) {
-		global $wpdb;
+    // Check if the form is submitted for adding a new school
+    if (isset($_POST['upload'])) {
+        global $wpdb;
 
-		// Sanitize and validate form inputs
-		$password = isset($_POST['password']) ? $_POST['password'] : '';
-		$school_name = isset($_POST['school_name']) ? sanitize_text_field($_POST['school_name']) : '';
-		$subdomain = isset($_POST['subdomain']) ? sanitize_text_field($_POST['subdomain']) : '';
-		$principal = isset($_POST['principal']) ? sanitize_text_field($_POST['principal']) : '';
-		$ph_no = isset($_POST['ph_no']) ? sanitize_text_field($_POST['ph_no']) : '';
-		$mail_id = isset($_POST['mail_id']) ? sanitize_email($_POST['mail_id']) : '';
-		$address = isset($_POST['address']) ? wp_kses_post($_POST['address']) : '';
+        // Sanitize and validate form inputs
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+        $school_name = isset($_POST['school_name']) ? sanitize_text_field($_POST['school_name']) : '';
+        $subdomain = isset($_POST['subdomain']) ? sanitize_text_field($_POST['subdomain']) : '';
+        $principal = isset($_POST['principal']) ? sanitize_text_field($_POST['principal']) : '';
+        $ph_no = isset($_POST['ph_no']) ? sanitize_text_field($_POST['ph_no']) : '';
+        $mail_id = isset($_POST['mail_id']) ? sanitize_email($_POST['mail_id']) : '';
+        $address = isset($_POST['address']) ? wp_kses_post($_POST['address']) : '';
 
-		// Check if the subdomain is empty, and if so, generate a unique one
-		if (empty($subdomain)) {
-			$subdomain = strtolower(str_replace(' ', '', $school_name));
-		}
+        // Check if the subdomain is empty, and if so, generate a unique one
+        if (empty($subdomain)) {
+            $subdomain = strtolower(str_replace(' ', '', $school_name));
+        }
 
-		if (empty($school_name)) {
-			echo '<div class="error-message">School Name is required.</div>';
-		} elseif (empty($subdomain)) {
-			echo '<div class="error-message">Subdomain is required.</div>';
-		} elseif (empty($principal)) {
-			echo '<div class="error-message">Principal is required.</div>';
-		} elseif (empty($ph_no)) {
-			echo '<div class="error-message">Phone Number is required.</div>';
-		} elseif (empty($mail_id) || !is_email($mail_id)) {
-			echo '<div class="error-message">Please enter a valid email address.</div>';
-		} elseif (empty($address)) {
-			echo '<div class="error-message">Address is required.</div>';
-		} elseif (empty($password)) {
-			echo '<div class="error-message">Password is required.</div>';
-		} elseif (!is_strong_password($password)) {
-			echo '<div class="error-message">Password must contain at least 8 characters, including uppercase letters, lowercase letters, numbers, and special characters.</div>';
-		} else {
-			// Check if the subdomain and email ID already exist in the database
-			$subdomain_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE subdomain = %s", $subdomain));
-			$email_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE mail_id = %s", $mail_id));
+        if (empty($school_name)) {
+            echo '<div class="error-message">School Name is required.</div>';
+        } elseif (empty($subdomain)) {
+            echo '<div class="error-message">Subdomain is required.</div>';
+        } elseif (empty($principal)) {
+            echo '<div class="error-message">Principal is required.</div>';
+        } elseif (empty($ph_no)) {
+            echo '<div class="error-message">Phone Number is required.</div>';
+        } elseif (empty($mail_id) || !is_email($mail_id)) {
+            echo '<div class="error-message">Please enter a valid email address.</div>';
+        } elseif (empty($address)) {
+            echo '<div class="error-message">Address is required.</div>';
+        } elseif (empty($password)) {
+            echo '<div class="error-message">Password is required.</div>';
+        } elseif (!is_strong_password($password)) {
+            echo '<div class="error-message">Password must contain at least 8 characters, including uppercase letters, lowercase letters, numbers, and special characters.</div>';
+        } else {
+            // Check if the subdomain and email ID already exist in the database
+            $subdomain_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE subdomain = %s", $subdomain));
+            $email_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE mail_id = %s", $mail_id));
 
-			if ($subdomain_exists) {
-				echo '<div class="error-message">Subdomain already exists. Please choose a different one.</div>';
-			} elseif ($email_exists) {
-				echo '<div class="error-message">Email ID already exists. Please use a different one.</div>';
-			} else {
-				// Insert the sanitized data into the database
-				$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            if ($subdomain_exists) {
+                echo '<div class="error-message">Subdomain already exists. Please choose a different one.</div>';
+            } elseif ($email_exists) {
+                echo '<div class="error-message">Email ID already exists. Please use a different one.</div>';
+            } else {
+                // Insert the sanitized data into the database
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-				$data = array(
-					'admin_id' => absint($current_user->ID),
-					'school_name' => $school_name,
-					'subdomain' => $subdomain,
-					'principal' => $principal,
-					'ph_no' => $ph_no,
-					'mail_id' => $mail_id,
-					'address' => $address,
-					'password' => $hashed_password,
-				);
+                $data = array(
+                    'admin_id' => absint($current_user->ID),
+                    'school_name' => $school_name,
+                    'subdomain' => $subdomain,
+                    'principal' => $principal,
+                    'ph_no' => $ph_no,
+                    'mail_id' => $mail_id,
+                    'address' => $address,
+                    'password' => $hashed_password,
+                );
 
-				$wpdb->insert($table_name, $data);
+                $wpdb->insert($table_name, $data);
 
-				// Display a success message or take appropriate action
-				echo '<div class="success-message">Data has been uploaded successfully.</div>';
+                // Display a success message or take appropriate action
+                echo '<div class="success-message">Data has been uploaded successfully.</div>';
 
-				// Clear the form fields after successful data upload
-				$school_name = '';
-				$subdomain = '';
-				$principal = '';
-				$ph_no = '';
-				$mail_id = '';
-				$address = '';
-			}
-		}
-	} elseif (isset($_POST['update'])) {
-		// Handle form submission for updating data
-		$update_id = absint($_POST['update_id']);
-		$update_school_name = isset($_POST['edit_school_name']) ? sanitize_text_field($_POST['edit_school_name']) : '';
-		$update_subdomain = isset($_POST['edit_subdomain']) ? sanitize_text_field($_POST['edit_subdomain']) : '';
-		$update_principal = isset($_POST['edit_principal']) ? sanitize_text_field($_POST['edit_principal']) : '';
-		$update_ph_no = isset($_POST['edit_ph_no']) ? sanitize_text_field($_POST['edit_ph_no']) : '';
-		$update_mail_id = isset($_POST['edit_mail_id']) ? sanitize_email($_POST['edit_mail_id']) : '';
-		$update_address = isset($_POST['edit_address']) ? wp_kses_post($_POST['edit_address']) : '';
+                // Clear the form fields after successful data upload
+                $school_name = '';
+                $subdomain = '';
+                $principal = '';
+                $ph_no = '';
+                $mail_id = '';
+                $address = '';
+            }
+        }
+    } elseif (isset($_POST['update'])) {
+        // Handle form submission for updating data
+        $update_id = absint($_POST['update_id']);
+        $update_school_name = isset($_POST['edit_school_name']) ? sanitize_text_field($_POST['edit_school_name']) : '';
+        $update_subdomain = isset($_POST['edit_subdomain']) ? sanitize_text_field($_POST['edit_subdomain']) : '';
+        $update_principal = isset($_POST['edit_principal']) ? sanitize_text_field($_POST['edit_principal']) : '';
+        $update_ph_no = isset($_POST['edit_ph_no']) ? sanitize_text_field($_POST['edit_ph_no']) : '';
+        $update_mail_id = isset($_POST['edit_mail_id']) ? sanitize_email($_POST['edit_mail_id']) : '';
+        $update_address = isset($_POST['edit_address']) ? wp_kses_post($_POST['edit_address']) : '';
 
-		// Check if the subdomain and email ID already exist in the database for other records
-		$subdomain_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE subdomain = %s AND id != %d", $update_subdomain, $update_id));
-		$email_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE mail_id = %s AND id != %d", $update_mail_id, $update_id));
+        // Check if the subdomain and email ID already exist in the database for other records
+        $subdomain_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE subdomain = %s AND id != %d", $update_subdomain, $update_id));
+        $email_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE mail_id = %s AND id != %d", $update_mail_id, $update_id));
 
-		if ($subdomain_exists) {
-			echo '<div class="error-message">Subdomain already exists. Please choose a different one.</div>';
-		} elseif ($email_exists) {
-			echo '<div class="error-message">Email ID already exists. Please use a different one.</div>';
-		} else {
-			// Perform the update query
-			$data = array(
-				'school_name' => $update_school_name,
-				'subdomain' => $update_subdomain,
-				'principal' => $update_principal,
-				'ph_no' => $update_ph_no,
-				'mail_id' => $update_mail_id,
-				'address' => $update_address,
-			);
-			$wpdb->update($table_name, $data, array('id' => $update_id));
+        if ($subdomain_exists) {
+            echo '<div class="error-message">Subdomain already exists. Please choose a different one.</div>';
+        } elseif ($email_exists) {
+            echo '<div class="error-message">Email ID already exists. Please use a different one.</div>';
+        } else {
+            // Perform the update query
+            $data = array(
+                'school_name' => $update_school_name,
+                'subdomain' => $update_subdomain,
+                'principal' => $update_principal,
+                'ph_no' => $update_ph_no,
+                'mail_id' => $update_mail_id,
+                'address' => $update_address,
+            );
+            $wpdb->update($table_name, $data, array('id' => $update_id));
 
-			// Display a success message or take appropriate action
-			echo '<div class="success-message">Data has been updated successfully.</div>';
-		}
-	} elseif (isset($_POST['delete_id'])) {
-		$delete_id = absint($_POST['delete_id']);
+            // Display a success message or take appropriate action
+            echo '<div class="success-message">Data has been updated successfully.</div>';
+        }
+    } elseif (isset($_POST['delete_id'])) {
+        $delete_id = absint($_POST['delete_id']);
 
-		// Check if the delete nonce is valid
-		if (isset($_POST['delete_nonce']) && wp_verify_nonce($_POST['delete_nonce'], 'delete_nonce')) {
-			// Perform the deletion
-			$wpdb->delete($table_name, array('id' => $delete_id));
+        // Check if the delete nonce is valid
+        if (isset($_POST['delete_nonce']) && wp_verify_nonce($_POST['delete_nonce'], 'delete_nonce')) {
+            // Perform the deletion
+            $wpdb->delete($table_name, array('id' => $delete_id));
 
-			// Display a success message or take appropriate action
-			echo '<div class="success-message">Data has been deleted successfully.</div>';
+            // Display a success message or take appropriate action
+            echo '<div class="success-message">Data has been deleted successfully.</div>';
 
-			// Refresh the page after deletion
-			echo '<meta http-equiv="refresh" content="0">';
-		}
-	}
+            // Refresh the page after deletion
+            echo '<meta http-equiv="refresh" content="0">';
+        }
+    }
 
-	$query_results = $wpdb->get_results("SELECT * FROM $table_name");
-	?>
+    $query_results = $wpdb->get_results("SELECT * FROM $table_name");
+?>
 
     <style>
         /* Microsoft-themed styling */
@@ -263,7 +264,7 @@ if (is_user_logged_in()) {
             border-radius: 3px;
         }
 
-        input[type="submit"] {
+        .submit {
             background-color: #0078D4;
             color: #fff;
             padding: 12px 20px;
@@ -272,7 +273,16 @@ if (is_user_logged_in()) {
             border-radius: 3px;
         }
 
-        input[type="submit"]:hover {
+        .logout {
+            background-color: red;
+            color: #fff;
+            padding: 12px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .submit:hover {
             background-color: #005a9e;
         }
 
@@ -306,9 +316,97 @@ if (is_user_logged_in()) {
         th {
             background-color: #f2f2f2;
         }
+
+        /* Top navigation bar */
+        .topnav {
+            background-color: black;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+        }
+
+        /* Left side of the top navigation bar */
+        .left {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Special School Management logo text */
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* Right side of the top navigation bar */
+        .right {
+            position: relative;
+            /* Position the profile icon and dropdown */
+            display: flex;
+            align-items: center;
+        }
+
+        /* Profile icon */
+        .profile-icon {
+            cursor: pointer;
+        }
+
+        /* Dropdown menu content */
+        .dropdown-content {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: none;
+            padding: 10px;
+        }
+
+        /* Show the dropdown menu on hover */
+        .profile:hover .dropdown-content {
+            display: block;
+        }
+
+        /* Style the links inside the dropdown */
+        .dropdown-content a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        /* Change the link color on hover */
+        .dropdown-content a:hover {
+            background-color: #0078D4;
+            color: #fff;
+        }
     </style>
+    <!-- Make sure to include Font Awesome CSS in the <head> of your HTML file -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <div class="topnav">
+        <div class="left">
+            <span class="logo">Special School Management</span>
+        </div>
+        <div class="right">
+            <div class="profile">
+                <i class="fas fa-user-circle profile-icon" style="font-size: 24px;"></i>
+                <div class="dropdown-content">
+                    <a href="#">Profile</a>
+                    <a href="#">Settings</a>
+                    <form method="post" action="">
+                        <?php wp_nonce_field('super_admin_logout', 'super_admin_logout_nonce'); ?>
+                        <input class="logout" type="submit" name="super_admin_logout" value="Logout">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
+
         <h1>Welcome, <?php echo esc_html($current_user->user_login); ?>!</h1>
 
         <!-- Add School Form -->
@@ -338,7 +436,7 @@ if (is_user_logged_in()) {
                     <label for="password">Password:</label>
                     <input type="password" name="password" required autocomplete="off">
 
-                    <input type="submit" name="upload" value="Upload">
+                    <input class="submit" type="submit" name="upload" value="Upload">
                     <button type="button" onclick="hidePopup()">Cancel</button>
                 </form>
             </div>
@@ -350,7 +448,7 @@ if (is_user_logged_in()) {
             <div class="popup-container">
                 <h2 class="entry-title">Edit School Data</h2>
                 <form method="post" action="">
-                    <input type="hidden" id="edit_id" name="update_id" value="">
+                    <input type="hidden" id="update_regno" name="update_id" value="">
                     <label for="edit_school_name">Name:</label>
                     <input type="text" name="edit_school_name" id="edit_school_name" required autocomplete="on" oninput="this.placeholder = this.value">
 
@@ -369,57 +467,51 @@ if (is_user_logged_in()) {
                     <label for="edit_address">Address:</label>
                     <textarea name="edit_address" id="edit_address" required autocomplete="on" oninput="this.placeholder = this.value"></textarea>
 
-                    <input type="submit" name="update" value="Update">
+                    <input class="submit" type="submit" name="update" value="Update">
                     <button type="button" onclick="hideEditPopup()">Cancel</button>
                 </form>
             </div>
         </div>
         <!-- Display Table -->
-		<?php if (!empty($query_results)) : ?>
+        <?php if (!empty($query_results)) : ?>
             <table>
                 <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Subdomain</th>
-                    <th>Principal</th>
-                    <th>Phone Number</th>
-                    <th>Email</th>
-                    <th>Address</th>
-                    <th>Actions</th>
-                </tr>
+                    <tr>
+                        <th>Name</th>
+                        <th>Subdomain</th>
+                        <th>Principal</th>
+                        <th>Phone Number</th>
+                        <th>Email</th>
+                        <th>Address</th>
+                        <th>Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
-				<?php foreach ($query_results as $school_data) : ?>
-                    <tr>
-                        <td><?php echo esc_html($school_data->school_name); ?></td>
-                        <td><?php echo esc_html($school_data->subdomain); ?></td>
-                        <td><?php echo esc_html($school_data->principal); ?></td>
-                        <td><?php echo esc_html($school_data->ph_no); ?></td>
-                        <td><?php echo esc_html($school_data->mail_id); ?></td>
-                        <td><?php echo esc_html($school_data->address); ?></td>
-                        <td>
-                            <button onclick="editPopup(<?php echo $school_data->id; ?>, <?php $query_results ?>)">Edit</button>
-                            <form method="post" action="">
-                                <input type="hidden" name="delete_id" value="<?php echo $school_data->id; ?>">
-								<?php wp_nonce_field('delete_nonce', 'delete_nonce'); ?>
-                                <button type="submit" onclick="return confirm('Are you sure you want to delete this record?')">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-				<?php endforeach; ?>
+                    <?php foreach ($query_results as $school_data) : ?>
+                        <tr>
+                            <td><?php echo esc_html($school_data->school_name); ?></td>
+                            <td><?php echo esc_html($school_data->subdomain); ?></td>
+                            <td><?php echo esc_html($school_data->principal); ?></td>
+                            <td><?php echo esc_html($school_data->ph_no); ?></td>
+                            <td><?php echo esc_html($school_data->mail_id); ?></td>
+                            <td><?php echo esc_html($school_data->address); ?></td>
+                            <td>
+                                <button onclick="editPopup(<?php echo $school_data->id; ?>, <?php $query_results ?>)">Edit</button>
+                                <form method="post" action="">
+                                    <input type="hidden" name="delete_id" value="<?php echo $school_data->id; ?>">
+                                    <?php wp_nonce_field('delete_nonce', 'delete_nonce'); ?>
+                                    <button class="submit" type="submit" onclick="return confirm('Are you sure you want to delete this record?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
-		<?php else : ?>
+        <?php else : ?>
             <p>No school data found.</p>
-		<?php endif; ?>
+        <?php endif; ?>
 
-        <!-- Logout Form -->
-        <form method="post" action="">
-			<?php wp_nonce_field('super_admin_logout', 'super_admin_logout_nonce'); ?>
-            <input type="submit" name="super_admin_logout" value="Logout">
-        </form>
     </div>
-
     <script>
         function showPopup() {
             document.getElementById("popupOverlay").style.display = "block";
@@ -452,11 +544,21 @@ if (is_user_logged_in()) {
         function hideEditPopup() {
             document.getElementById("editPopupOverlay").style.display = "none";
         }
+
+        function openNav() {
+            document.getElementById("mySidenav").style.width = "250px";
+            document.getElementById("main").style.marginLeft = "250px";
+        }
+
+        function closeNav() {
+            document.getElementById("mySidenav").style.width = "0";
+            document.getElementById("main").style.marginLeft = "0";
+        }
     </script>
 
-	<?php
+<?php
 } else {
-	// Redirect to the login page if the user is not logged in
-	wp_redirect(home_url('/super-admin-login/'));
-	exit;
+    // Redirect to the login page if the user is not logged in
+    wp_redirect(home_url('/super-admin-login/'));
+    exit;
 }

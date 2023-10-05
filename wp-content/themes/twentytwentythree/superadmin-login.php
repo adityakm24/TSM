@@ -30,7 +30,6 @@ if ( isset( $_POST['super_admin_login'] ) ) {
 }
 ?>
 
-<!-- HTML code for the login form -->
 <style>
     body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
